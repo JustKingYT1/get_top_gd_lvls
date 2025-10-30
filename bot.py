@@ -1,41 +1,57 @@
 import requests
 import time
-from search import LevelSearch
-from settings import BOT_TOKEN, GITHUB_RAW_URL, LOCAL_DATA_PATH
 import os
+from search import LevelSearch
+from settings import BOT_TOKEN, LOCAL_DATA_PATH
+from datetime import datetime
 
 class DemonlistBotSync:
     def __init__(self):
         self.token = BOT_TOKEN
         self.api_url = f"https://api.telegram.org/bot{self.token}"
         self.searcher = None
-        self.offset = None  # для getUpdates
+        self.offset = None
+        self._last_mtime = None  # для отслеживания изменений JSON
 
     def load_data(self):
-        """Загружает данные с GitHub или локально."""
-        print("🚀 Загружаем данные с GitHub...")
-        self.searcher = LevelSearch.from_url(GITHUB_RAW_URL, LOCAL_DATA_PATH)
-        if not self.searcher.data:
-            print("⚠️ Не удалось загрузить с GitHub, пробуем локально...")
-            if os.path.exists(LOCAL_DATA_PATH):
-                self.searcher = LevelSearch.from_file(LOCAL_DATA_PATH)
-            else:
-                print("❌ Нет ни локальных, ни сетевых данных!")
-                self.searcher = LevelSearch([])
-        print(f"✅ Загружено уровней: {len(self.searcher.data)}")
+        if os.path.exists(LOCAL_DATA_PATH):
+            print(f"🔄 [{datetime.now()}] Загружаем данные из локального JSON...")
+            self.searcher = LevelSearch.from_file(LOCAL_DATA_PATH)
+            print(f"✅ Данные загружены, уровней: {len(self.searcher.data)}")
+        else:
+            print("⚠️ Локальный файл demonlist.json не найден!")
+            self.searcher = LevelSearch([])
+
+    def reload_data(self):
+        """Обновляем данные после изменения JSON"""
+        self.load_data()
+
+    def check_reload(self):
+        """Проверяет, обновился ли JSON, и перезагружает данные"""
+        try:
+            mtime = os.path.getmtime(LOCAL_DATA_PATH)
+            if self._last_mtime is None:
+                self._last_mtime = mtime
+            elif mtime != self._last_mtime:
+                print("🔄 Обнаружено обновление demonlist.json, перезагружаем данные...")
+                self.reload_data()
+                self._last_mtime = mtime
+        except FileNotFoundError:
+            pass
 
     def send_message(self, chat_id, text):
-        """Отправка сообщения пользователю."""
         data = {
             "chat_id": chat_id,
             "text": text,
             "parse_mode": "HTML",
             "disable_web_page_preview": True
         }
-        requests.post(f"{self.api_url}/sendMessage", data=data)
+        try:
+            requests.post(f"{self.api_url}/sendMessage", data=data, timeout=10)
+        except Exception as e:
+            print(f"❌ Не удалось отправить сообщение: {e}")
 
     def handle_message(self, message):
-        """Обработка одного сообщения от пользователя."""
         chat_id = message["chat"]["id"]
         text = message.get("text", "")
 
@@ -86,11 +102,13 @@ class DemonlistBotSync:
         self.send_message(chat_id, text_reply)
 
     def run(self):
-        """Главный цикл бота (polling)."""
+        """Главный цикл polling бота с авто-обновлением JSON"""
         self.load_data()
         print("🤖 Бот запущен и ждёт сообщений...")
 
         while True:
+            self.check_reload()  # проверяем, нужно ли обновить данные
+
             params = {"timeout": 100, "offset": self.offset}
             try:
                 response = requests.get(f"{self.api_url}/getUpdates", params=params, timeout=120)
@@ -101,7 +119,12 @@ class DemonlistBotSync:
                         self.handle_message(update["message"])
             except requests.exceptions.RequestException as e:
                 print(f"⚠️ Ошибка сети: {e}")
-                time.sleep(5)  # пауза перед повтором
+                time.sleep(5)
             except Exception as e:
                 print(f"❌ Ошибка: {e}")
                 time.sleep(5)
+
+
+if __name__ == "__main__":
+    bot = DemonlistBotSync()
+    bot.run()
