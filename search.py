@@ -2,7 +2,7 @@
 import json
 import re
 import settings
-import requests # Добавляем requests для загрузки по URL
+import requests
 
 class LevelSearch:
     """Класс для поиска уровней по имени, рангу и длительности."""
