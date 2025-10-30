@@ -1,5 +1,5 @@
 # update_data.py
-from scraper.scraper import DemonlistScraper
+from scraper import DemonlistScraper
 
 if __name__ == "__main__":
     print("🚀 Запускаю плановое обновление данных Demonlist...")
