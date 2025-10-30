@@ -1,11 +1,4 @@
-    {
-        "rank": 1,
-        "name": "Thinking Space II",
-        "link": "https://demonlist.org/classic/1",
-        "length": "1:10",
-        "objects": 139553,
-        "version": "2.2"
-    },
+[
     {
         "rank": 2,
         "name": "Amethyst",
@@ -13069,8 +13062,7 @@
         "length": "2:59",
         "objects": 90039,
         "version": "2.2"
-    }
-=======
+    },
   {
     "rank": 1,
     "name": "Thinking Space II",
