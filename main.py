@@ -1,10 +1,10 @@
 import asyncio
-from bot import DemonlistBot
+from bot import DemonlistBotSync
 
 def main():
     print("🚀 Запускаем Telegram-бота Demonlist...")
-    bot = DemonlistBot()
-    asyncio.run(bot.run())
+    bot = DemonlistBotSync()
+    bot.run()
 
 if __name__ == "__main__":
     main()

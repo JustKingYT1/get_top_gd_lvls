@@ -3,9 +3,10 @@ import os
 
 dotenv.load_dotenv()
 
+
 # Настройки Telegram
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-
+ 
 # --- Основные настройки ---
 BASE_URL = "https://demonlist.org"
 # Данные теперь будут храниться в папке data/

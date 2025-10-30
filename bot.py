@@ -1,28 +1,18 @@
-# bot.py
-import asyncio
-from aiogram import Bot, Dispatcher, types
-from aiogram.client.default import DefaultBotProperties
-from aiogram.filters import CommandStart
+import requests
+import time
 from search import LevelSearch
 from settings import BOT_TOKEN, GITHUB_RAW_URL, LOCAL_DATA_PATH
 import os
-import aiogram
 
-class DemonlistBot:
+class DemonlistBotSync:
     def __init__(self):
-        self.bot = Bot(
-            token=BOT_TOKEN,
-            default=DefaultBotProperties(parse_mode="HTML")
-        )
-        self.dp = Dispatcher()
+        self.token = BOT_TOKEN
+        self.api_url = f"https://api.telegram.org/bot{self.token}"
         self.searcher = None
+        self.offset = None  # для getUpdates
 
-        # Регистрируем хэндлеры
-        self.dp.message.register(self.start_command, CommandStart())
-        self.dp.message.register(self.handle_query)
-
-    async def load_data(self):
-        """Загружает данные с GitHub (или локально, если GitHub недоступен)."""
+    def load_data(self):
+        """Загружает данные с GitHub или локально."""
         print("🚀 Загружаем данные с GitHub...")
         self.searcher = LevelSearch.from_url(GITHUB_RAW_URL, LOCAL_DATA_PATH)
         if not self.searcher.data:
@@ -34,26 +24,39 @@ class DemonlistBot:
                 self.searcher = LevelSearch([])
         print(f"✅ Загружено уровней: {len(self.searcher.data)}")
 
-    async def start_command(self, message: types.Message):
-        """Обработка команды /start"""
-        text = (
-            "👋 Привет! Я бот для поиска уровней из Demonlist.\n\n"
-            "📌 Примеры запросов:\n"
-            " - <b>1</b> — поиск по рангу\n"
-            " - <b>slaughterhouse</b> — поиск по названию\n"
-            " - <b>len > 2m30s</b> или <b>len > 150s</b> — поиск по длине"
-        )
-        await message.answer(text)
+    def send_message(self, chat_id, text):
+        """Отправка сообщения пользователю."""
+        data = {
+            "chat_id": chat_id,
+            "text": text,
+            "parse_mode": "HTML",
+            "disable_web_page_preview": True
+        }
+        requests.post(f"{self.api_url}/sendMessage", data=data)
 
-    async def handle_query(self, message: types.Message):
-        """Обрабатывает обычный текст пользователя (поисковый запрос)."""
-        query = message.text.strip()
+    def handle_message(self, message):
+        """Обработка одного сообщения от пользователя."""
+        chat_id = message["chat"]["id"]
+        text = message.get("text", "")
+
+        if text.startswith("/start"):
+            start_text = (
+                "👋 Привет! Я бот для поиска уровней из Demonlist.\n\n"
+                "📌 Примеры запросов:\n"
+                " - <b>1</b> — поиск по рангу\n"
+                " - <b>slaughterhouse</b> — поиск по названию\n"
+                " - <b>len > 2m30s</b> или <b>len > 150s</b> — поиск по длине"
+            )
+            self.send_message(chat_id, start_text)
+            return
+
+        query = text.strip()
         if not query:
-            await message.answer("❌ Пустой запрос.")
+            self.send_message(chat_id, "❌ Пустой запрос.")
             return
 
         if not self.searcher or not self.searcher.data:
-            await message.answer("⚠️ Данные ещё не загружены. Попробуй чуть позже.")
+            self.send_message(chat_id, "⚠️ Данные ещё не загружены. Попробуй чуть позже.")
             return
 
         if query.lower().startswith("len >"):
@@ -62,7 +65,7 @@ class DemonlistBot:
             results = self.searcher.search_by_name_or_rank(query)
 
         if not results:
-            await message.answer("😔 Ничего не найдено.")
+            self.send_message(chat_id, "😔 Ничего не найдено.")
             return
 
         results = sorted(results, key=lambda x: x["rank"])
@@ -76,14 +79,29 @@ class DemonlistBot:
                 f"🔗 <a href='{r['link']}'>Ссылка</a>"
             )
 
-        text = "\n\n".join(reply_parts)
+        text_reply = "\n\n".join(reply_parts)
         if len(results) > 10:
-            text += f"\n\n...и ещё {len(results) - 10} результатов."
+            text_reply += f"\n\n...и ещё {len(results) - 10} результатов."
 
-        await message.answer(text)
+        self.send_message(chat_id, text_reply)
 
-    async def run(self):
-        """Запускает бота."""
-        await self.load_data()
+    def run(self):
+        """Главный цикл бота (polling)."""
+        self.load_data()
         print("🤖 Бот запущен и ждёт сообщений...")
-        await self.dp.start_polling(self.bot)
+
+        while True:
+            params = {"timeout": 100, "offset": self.offset}
+            try:
+                response = requests.get(f"{self.api_url}/getUpdates", params=params, timeout=120)
+                updates = response.json().get("result", [])
+                for update in updates:
+                    self.offset = update["update_id"] + 1
+                    if "message" in update:
+                        self.handle_message(update["message"])
+            except requests.exceptions.RequestException as e:
+                print(f"⚠️ Ошибка сети: {e}")
+                time.sleep(5)  # пауза перед повтором
+            except Exception as e:
+                print(f"❌ Ошибка: {e}")
+                time.sleep(5)
