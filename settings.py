@@ -1,4 +1,10 @@
-# settings.py
+import dotenv
+import os
+
+dotenv.load_dotenv()
+
+# Настройки Telegram
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 # --- Основные настройки ---
 BASE_URL = "https://demonlist.org"
@@ -25,3 +31,4 @@ STUCK_CARD_MULTIPLE = 150
 # --- Настройки Github ---
 GITHUB_RAW_URL = "https://raw.githubusercontent.com/justkingyt1/get_top_gd_lvls/main/data/demonlist.json"
 LOCAL_DATA_PATH = "data/demonlist.json"
+
