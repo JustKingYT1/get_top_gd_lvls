@@ -6,6 +6,7 @@ dotenv.load_dotenv()
 
 # Настройки Telegram
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+ADMIN_ID = 6297290680
  
 # --- Основные настройки ---
 BASE_URL = "https://demonlist.org"
