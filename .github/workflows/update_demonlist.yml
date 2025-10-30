@@ -3,7 +3,7 @@ name: Ежедневное обновление Demonlist
 
 on:
   schedule:
-    - cron: '0 5 * * *'  # каждый день в 5:00 UTC
+    - cron: '0 21 * * *'  # каждый день в 5:00 UTC
   workflow_dispatch:
 
 permissions:
