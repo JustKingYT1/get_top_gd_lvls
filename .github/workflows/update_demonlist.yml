@@ -1,0 +1,28 @@
+# .github/workflows/update_demonlist.yml
+name: Ежедневное обновление Demonlist
+
+on:
+  schedule:
+    - cron: '0 21 * * *' # Каждый день в 5 утра по UTC
+  workflow_dispatch: # Кнопка для ручного запуска
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Playwright browsers and dependencies
+        run: playwright install --with-deps
+
+      - name: Run data scraper
+        run:

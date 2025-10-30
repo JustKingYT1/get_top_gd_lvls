@@ -1,39 +1,128 @@
 # search.py
 import json
+import re
 import settings
+import requests # Добавляем requests для загрузки по URL
 
 class LevelSearch:
-    """Класс для поиска уровней по имени или рангу."""
+    """Класс для поиска уровней по имени, рангу и длительности."""
 
     def __init__(self, data):
-        self.data = data
+        self.data = self._process_data(data)
+
+    def _process_data(self, raw_data):
+        """Обрабатывает сырые данные, конвертируя 'length' в секунды."""
+        processed = []
+        for level in raw_data:
+            length_str = level.get("length")
+            if length_str and ':' in length_str:
+                try:
+                    minutes, seconds = map(int, length_str.split(':'))
+                    level['duration_seconds'] = minutes * 60 + seconds
+                except (ValueError, TypeError):
+                    level['duration_seconds'] = 0 # Если данные некорректны
+            else:
+                level['duration_seconds'] = 0
+            processed.append(level)
+        return processed
 
     @classmethod
     def from_file(cls, path=settings.OUTPUT_FILE):
+        """Загружает данные из локального JSON файла."""
         try:
             with open(path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            print(f"✅ Загружено {len(data)} уровней из {path}")
+            print(f"✅ Локально загружено {len(data)} уровней из {path}")
             return cls(data)
         except FileNotFoundError:
-            print("❌ Файл данных не найден.")
+            print(f"❌ Локальный файл не найден по пути: {path}")
             return cls([])
 
-    def search(self, query):
+    @classmethod
+    def from_url(cls, url):
+        """Загружает данные по URL из GitHub Raw."""
+        try:
+            response = requests.get(url)
+            response.raise_for_status()  # Проверка на ошибки HTTP (404, 500..)
+            data = response.json()
+            print(f"✅ Успешно загружено {len(data)} уровней по URL.")
+            return cls(data)
+        except requests.RequestException as e:
+            print(f"❌ Не удалось загрузить данные по URL: {e}")
+            return cls([])
+
+    def _parse_user_duration(self, query: str) -> int:
+        """Парсит запрос пользователя (например, '2m30s') в секунды."""
+        total_seconds = 0
+        # Ищем минуты (e.g., 2m, 5min)
+        minutes_match = re.search(r'(\d+)\s*m', query, re.IGNORECASE)
+        if minutes_match:
+            total_seconds += int(minutes_match.group(1)) * 60
+        
+        # Ищем секунды (e.g., 90s, 30sec)
+        seconds_match = re.search(r'(\d+)\s*s', query, re.IGNORECASE)
+        if seconds_match:
+            total_seconds += int(seconds_match.group(1))
+
+        # Если нет 'm' или 's', считаем что это просто секунды
+        if not minutes_match and not seconds_match and query.isdigit():
+            total_seconds = int(query)
+            
+        return total_seconds
+
+    def search_by_name_or_rank(self, query):
+        """Поиск по названию или рангу."""
         if query.isdigit():
             rank = int(query)
-            return [d for d in self.data if d["rank"] == rank]
+            return [lvl for lvl in self.data if lvl["rank"] == rank]
+        
         query_low = query.lower()
-        return [d for d in self.data if query_low in d["name"].lower()]
+        return [lvl for lvl in self.data if query_low in lvl["name"].lower()]
+
+    def search_by_duration(self, query):
+        """Поиск уровней, которые длиннее или равны указанной длительности."""
+        required_seconds = self._parse_user_duration(query)
+        if required_seconds == 0:
+            return []
+        
+        print(f"Ищем уровни длиннее {required_seconds} секунд...")
+        return [lvl for lvl in self.data if lvl['duration_seconds'] >= required_seconds]
 
     def interactive(self):
+        """Запускает интерактивный режим поиска."""
+        if not self.data:
+            print("Нет данных для поиска. Завершение работы.")
+            return
+
         while True:
-            q = input("\n🔎 Введи ранг или часть названия (Enter — выход): ").strip()
+            prompt = (
+                "\n🔎 Введите запрос для поиска:\n"
+                " - Ранг (например, '1')\n"
+                " - Часть названия (например, 'slaughterhouse')\n"
+                " - Длительность (например, 'len > 2m30s' или 'len > 150s')\n"
+                "   (Нажмите Enter для выхода)\n> "
+            )
+            q = input(prompt).strip()
+
             if not q:
                 break
-            results = self.search(q)
+
+            results = []
+            if q.lower().startswith('len >'):
+                duration_query = q[5:].strip()
+                results = self.search_by_duration(duration_query)
+            else:
+                results = self.search_by_name_or_rank(q)
+            
             if not results:
                 print("❌ Ничего не найдено.")
                 continue
+
+            # Сортируем результаты по рангу для наглядности
+            results.sort(key=lambda x: x["rank"])
+
+            print(f"\n✨ Найдено результатов: {len(results)}")
             for r in results:
-                print(f"#{r['rank']} — {r['name']}\n  {r['link']}")
+                duration = r['duration_seconds']
+                length_str = f"{duration // 60}:{duration % 60:02d}"
+                print(f"  #{r['rank']:<4} - {r['name']} (Длительность: {length_str})\n     {r['link']}")

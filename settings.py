@@ -6,7 +6,7 @@ BASE_URL = "https://demonlist.org"
 OUTPUT_FILE = "data/demonlist.json"
 
 # --- Настройки Playwright ---
-HEADLESS = True
+HEADLESS = False
 SLOW_MO = 50
 
 # --- Тайм-ауты (в миллисекундах) ---
@@ -20,3 +20,8 @@ MAX_SCROLL_ROUNDS = 200
 MAX_NO_NEW_ATTEMPTS = 5
 FAST_SCROLLS_PER_STEP = 3
 STUCK_CARD_MULTIPLE = 150
+
+
+# --- Настройки Github ---
+GITHUB_RAW_URL = "https://raw.githubusercontent.com/justkingyt1/get_top_gd_lvls/main/data/demonlist.json"
+LOCAL_DATA_PATH = "data/demonlist.json"

@@ -23,22 +23,49 @@ class DemonlistScraper:
         self.page.wait_for_selector('div.w-\\[90\\%\\].mx-auto.grid.justify-items-center', timeout=settings.SELECTOR_TIMEOUT)
         time.sleep(2)
 
+    def _reanimate_scroll(self):
+        """'Раскачивает' страницу, если она перестала подгружать контент."""
+        print("😴 Похоже, ленивая загрузка 'уснула'. Пробуем ее разбудить...")
+        self.page.evaluate("window.scrollBy(0, -500);")
+        time.sleep(0.5)
+        self.page.evaluate("window.scrollBy(0, document.body.scrollHeight);")
+        time.sleep(1)
+
     def _smart_scroll(self):
-        print("📜 Начинаю скролл для загрузки всех уровней...")
-        prev_count = 0
-        no_new = 0
-        while no_new < settings.MAX_NO_NEW_ATTEMPTS:
-            self.page.evaluate("window.scrollBy(0, document.body.scrollHeight)")
-            time.sleep(settings.SCROLL_PAUSE)
-            new_count = self.page.evaluate("() => document.querySelectorAll('a[href^=\"/classic/\"]').length")
-            if new_count > prev_count:
-                print(f"🔽 Найдено карточек: {new_count}")
-                prev_count = new_count
-                no_new = 0
-            else:
-                no_new += 1
-                print(f"⏱ Нет новых карточек ({no_new}/{settings.MAX_NO_NEW_ATTEMPTS})")
-        print("✅ Скролл завершён.")
+        """
+        Умный скролл, который ждет подгрузки нового контента и борется с 'засыпанием' страницы.
+        """
+        print("📜 Начинаю умный скролл для загрузки всех уровней...")
+        prev_count = self.page.evaluate("() => document.querySelectorAll('a[href^=\"/classic/\"]').length")
+        no_new_attempts = 0
+
+        while no_new_attempts < settings.MAX_NO_NEW_ATTEMPTS:
+            # Делаем несколько быстрых скроллов
+            for _ in range(settings.FAST_SCROLLS_PER_STEP):
+                self.page.evaluate("window.scrollBy(0, document.body.scrollHeight)")
+                time.sleep(0.3)
+
+            # Терпеливо ждем появления нового контента
+            start_time = time.time()
+            found_new_in_cycle = False
+            while time.time() - start_time < settings.MAX_WAIT_FOR_NEW:
+                time.sleep(settings.SCROLL_PAUSE)
+                new_count = self.page.evaluate("() => document.querySelectorAll('a[href^=\"/classic/\"]').length")
+                if new_count > prev_count:
+                    print(f"🔽 Найдено карточек: {new_count}")
+                    prev_count = new_count
+                    no_new_attempts = 0  # Сбрасываем счетчик неудач
+                    found_new_in_cycle = True
+                    break # Выходим из цикла ожидания
+
+            # Если за все время ожидания ничего не появилось
+            if not found_new_in_cycle:
+                no_new_attempts += 1
+                print(f"⏱ Нет новых карточек ({no_new_attempts}/{settings.MAX_NO_NEW_ATTEMPTS})")
+                self._reanimate_scroll() # Пытаемся "разбудить" страницу
+        
+        print(f"✅ Скролл завершён. Всего найдено {prev_count} карточек.")
+
 
     def _extract_levels_list(self):
         html = self.page.content()
@@ -76,7 +103,10 @@ class DemonlistScraper:
             print(f"[{i+1}/{len(self.data)}] Загружаю: #{level['rank']} {level['name']}")
             try:
                 self.page.goto(link, wait_until="domcontentloaded", timeout=settings.PAGE_LOAD_TIMEOUT)
-                self.page.wait_for_selector('p.font-bold', timeout=10000)
+                # Увеличиваем таймаут ожидания селектора, чтобы дать странице больше времени
+                self.page.wait_for_selector('p.font-bold', timeout=15000)
+                # Даем еще полсекунды на всякий случай, если есть какие-то анимации
+                time.sleep(0.5)
                 details = self._parse_level_details(BeautifulSoup(self.page.content(), "html.parser"))
                 level.update(details)
             except PlaywrightTimeoutError:
@@ -85,7 +115,6 @@ class DemonlistScraper:
                 print(f"❌ Ошибка при обработке уровня #{level['rank']}: {e}")
 
     def _save(self):
-        # Убедимся, что директория data существует
         os.makedirs(os.path.dirname(settings.OUTPUT_FILE), exist_ok=True)
         with open(settings.OUTPUT_FILE, "w", encoding="utf-8") as f:
             json.dump(self.data, f, ensure_ascii=False, indent=2)
