@@ -9,10 +9,7 @@ def main():
     searcher = None
 
     # 1. Пытаемся загрузить свежие данные с GitHub
-    if "justkingyt1" in GITHUB_RAW_URL:
-        print("\n⚠️ ВНИМАНИЕ: Укажите ваше имя пользователя и репозиторий в GITHUB_RAW_URL в файле main.py")
-    else:
-        searcher = LevelSearch.from_url(GITHUB_RAW_URL)
+    searcher = LevelSearch.from_url(GITHUB_RAW_URL, LOCAL_DATA_PATH)
 
     # 2. Если не получилось, или если searcher не был создан, используем локальный файл
     if not searcher or not searcher.data:

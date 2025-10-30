@@ -3,6 +3,7 @@ import json
 import re
 import settings
 import requests
+import os
 
 class LevelSearch:
     """Класс для поиска уровней по имени, рангу и длительности."""
@@ -39,16 +40,38 @@ class LevelSearch:
             return cls([])
 
     @classmethod
-    def from_url(cls, url):
-        """Загружает данные по URL из GitHub Raw."""
+    def from_url(cls, url, local_file_path):
+        """
+        Загружает данные по URL из GitHub Raw и сохраняет их в локальный файл,
+        перезаписывая его, если он существует.
+        """
         try:
+            # Шаг 1: Загрузка данных по URL
             response = requests.get(url)
             response.raise_for_status()  # Проверка на ошибки HTTP (404, 500..)
             data = response.json()
-            print(f"✅ Успешно загружено {len(data)} уровней по URL.")
+            print(f"✅ Успешно загружено {len(data)} записей по URL.")
+
+            # Шаг 2: Сохранение данных в локальный файл с перезаписью
+            # Открываем файл в режиме 'w' (write), что автоматически
+            # создаст файл, если его нет, или перезапишет, если он существует.
+            with open(local_file_path, 'w', encoding='utf-8') as f:
+                # Используем json.dump для красивой записи JSON в файл
+                # ensure_ascii=False для корректного отображения не-ASCII символов
+                # indent=4 для форматирования с отступами
+                json.dump(data, f, ensure_ascii=False, indent=4)
+            
+            print(f"✅ Данные успешно сохранены в файл: {os.path.abspath(local_file_path)}")
+
             return cls(data)
         except requests.RequestException as e:
             print(f"❌ Не удалось загрузить данные по URL: {e}")
+            return cls([])
+        except IOError as e:
+            print(f"❌ Ошибка при записи в файл: {e}")
+            return cls([])
+        except json.JSONDecodeError as e:
+            print(f"❌ Ошибка декодирования JSON: {e}")
             return cls([])
 
     def _parse_user_duration(self, query: str) -> int:
