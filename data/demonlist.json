@@ -6706,7 +6706,10 @@
   {
     "rank": 839,
     "name": "Koantaoh",
-    "link": "https://demonlist.org/classic/839"
+    "link": "https://demonlist.org/classic/839",
+    "length": "1:13",
+    "objects": 50984,
+    "version": "2.2"
   },
   {
     "rank": 840,
@@ -13063,7 +13066,10 @@
   {
     "rank": 1634,
     "name": "Precipitance",
-    "link": "https://demonlist.org/classic/1634"
+    "link": "https://demonlist.org/classic/1634",
+    "length": "1:05",
+    "objects": 77769,
+    "version": "2.1"
   },
   {
     "rank": 1635,
