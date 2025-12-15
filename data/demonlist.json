@@ -250,10 +250,7 @@
   {
     "rank": 32,
     "name": "Eyes in the Water",
-    "link": "https://demonlist.org/classic/32",
-    "length": "1:32",
-    "objects": 91440,
-    "version": "2.1"
+    "link": "https://demonlist.org/classic/32"
   },
   {
     "rank": 33,
@@ -2338,18 +2335,12 @@
   {
     "rank": 293,
     "name": "Th3Dev0n",
-    "link": "https://demonlist.org/classic/293",
-    "length": "1:09",
-    "objects": 165611,
-    "version": "2.1"
+    "link": "https://demonlist.org/classic/293"
   },
   {
     "rank": 294,
     "name": "WcairoX",
-    "link": "https://demonlist.org/classic/294",
-    "length": "1:21",
-    "objects": 65535,
-    "version": "2.1"
+    "link": "https://demonlist.org/classic/294"
   },
   {
     "rank": 295,
@@ -9162,7 +9153,10 @@
   {
     "rank": 1146,
     "name": "Wind Storm",
-    "link": "https://demonlist.org/classic/1146"
+    "link": "https://demonlist.org/classic/1146",
+    "length": "1:30",
+    "objects": 77346,
+    "version": "2.1"
   },
   {
     "rank": 1147,
@@ -9991,7 +9985,10 @@
   {
     "rank": 1250,
     "name": "Aureole",
-    "link": "https://demonlist.org/classic/1250"
+    "link": "https://demonlist.org/classic/1250",
+    "length": "1:39",
+    "objects": 144924,
+    "version": "2.1"
   },
   {
     "rank": 1251,
@@ -11052,7 +11049,10 @@
   {
     "rank": 1383,
     "name": "encroaching dark",
-    "link": "https://demonlist.org/classic/1383"
+    "link": "https://demonlist.org/classic/1383",
+    "length": "2:58",
+    "objects": 101436,
+    "version": "2.2"
   },
   {
     "rank": 1384,
