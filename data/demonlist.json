@@ -250,7 +250,10 @@
   {
     "rank": 32,
     "name": "Eyes in the Water",
-    "link": "https://demonlist.org/classic/32"
+    "link": "https://demonlist.org/classic/32",
+    "length": "1:32",
+    "objects": 91440,
+    "version": "2.1"
   },
   {
     "rank": 33,
@@ -2335,12 +2338,18 @@
   {
     "rank": 293,
     "name": "Th3Dev0n",
-    "link": "https://demonlist.org/classic/293"
+    "link": "https://demonlist.org/classic/293",
+    "length": "1:09",
+    "objects": 165611,
+    "version": "2.1"
   },
   {
     "rank": 294,
     "name": "WcairoX",
-    "link": "https://demonlist.org/classic/294"
+    "link": "https://demonlist.org/classic/294",
+    "length": "1:21",
+    "objects": 65535,
+    "version": "2.1"
   },
   {
     "rank": 295,
@@ -5561,10 +5570,7 @@
   {
     "rank": 697,
     "name": "Dolos",
-    "link": "https://demonlist.org/classic/697",
-    "length": "1:40",
-    "objects": 131737,
-    "version": "2.1"
+    "link": "https://demonlist.org/classic/697"
   },
   {
     "rank": 698,
